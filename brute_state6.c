@@ -1,6 +1,4 @@
-// brute_state6.c
-// Windows: cl /O2 brute_state6.c
-// Linux/Mac: gcc -O3 -o brute_state6 brute_state6.c
+// brute_state6_v2.c
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -55,46 +53,58 @@ static void round_function(const uint32_t *state, uint32_t *rr) {
 }
 
 int main() {
-    // Sample 0
     uint32_t state_base[16] = {
         0xc6096c57, 0xc0d4865f, 0x77c0d486, 0x865f1701, 0xd4865f17,
-        0x37a6c743, 0x00000000, 0x6ca444ef, 0x00000001, 0x00000000,
+        0x37a6c743, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x694ce16a, 0x5f1701d9, 0x77c0d486, 0xc0d4865f, 0xd4865f17, 0xaf511ca1
     };
     uint32_t target[5] = {0xbdd90000, 0xbebbc2b0, 0x88dc5c1b, 0x12615b3a, 0x37b89db9};
 
+    // Try 4 combinations of state[7] and state[8]
+    uint32_t s7_vals[] = {0x00000000, 0x6ca444ef, 0x00000001, 0xd7f42348};
+    uint32_t s8_vals[] = {0x00000000, 0x00000001, 0x6ca444ef, 0xd7f42348};
+
     uint32_t state[16];
     uint32_t rr[5];
 
-    printf("Brute-forcing state[6] with state[7]=0x6CA444EF, state[8]=1...\n");
-    fflush(stdout);
+    for (int si = 0; si < 4; si++) {
+        for (int sj = 0; sj < 4; sj++) {
+            uint32_t s7 = s7_vals[si];
+            uint32_t s8 = s8_vals[sj];
 
-    for (uint64_t s6 = 0; s6 <= 0xFFFFFFFF; s6++) {
-        memcpy(state, state_base, sizeof(state));
-        state[6] = (uint32_t)s6;
-
-        round_function(state, rr);
-
-        uint32_t o0 = state[0] + rr[0];
-        if (o0 != target[0]) continue;
-
-        uint32_t o1 = state[1] + rr[1];
-        if (o1 != target[1]) continue;
-
-        uint32_t o2 = state[2] + rr[2];
-        uint32_t o3 = state[3] + rr[3];
-        uint32_t o4 = state[4] + rr[4];
-        if (o2 == target[2] && o3 == target[3] && o4 == target[4]) {
-            printf("FOUND! state[6] = 0x%08x\n", (uint32_t)s6);
+            printf("Testing state[7]=0x%08x, state[8]=0x%08x ...\n", s7, s8);
             fflush(stdout);
-        }
 
-        if ((s6 & 0x0FFFFFFF) == 0) {
-            printf("Progress: %lu / 4294967296\n", (unsigned long)s6);
+            memcpy(state, state_base, sizeof(state));
+            state[7] = s7;
+            state[8] = s8;
+            state[9] = 0;
+
+            int found = 0;
+            for (uint64_t s6 = 0; s6 <= 0xFFFFFFFF; s6++) {
+                state[6] = (uint32_t)s6;
+
+                round_function(state, rr);
+
+                uint32_t o0 = state_base[0] + rr[0];
+                if (o0 != target[0]) continue;
+                uint32_t o1 = state_base[1] + rr[1];
+                if (o1 != target[1]) continue;
+                uint32_t o2 = state_base[2] + rr[2];
+                uint32_t o3 = state_base[3] + rr[3];
+                uint32_t o4 = state_base[4] + rr[4];
+                if (o2 == target[2] && o3 == target[3] && o4 == target[4]) {
+                    printf("  FOUND! state[6]=0x%08x state[7]=0x%08x state[8]=0x%08x\n",
+                           (uint32_t)s6, s7, s8);
+                    found = 1;
+                    fflush(stdout);
+                }
+            }
+            if (!found) printf("  Not found.\n");
             fflush(stdout);
         }
     }
 
-    printf("Search complete.\n");
+    printf("All done.\n");
     return 0;
 }
