@@ -1,0 +1,30 @@
+name: Brute Force state[6]
+
+on:
+  workflow_dispatch:  # 手动触发，避免每次 push 都跑
+
+jobs:
+  brute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # 1小时绝对够，防止意外挂起
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compile C program
+        run: |
+          gcc -O3 -march=native -mtune=native -o brute brute_state6.c
+          echo "Compilation done."
+
+      - name: Run brute force
+        run: |
+          ./brute | tee output.log
+          echo "Search finished."
+
+      - name: Upload result (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brute-output
+          path: output.log
