@@ -6,7 +6,6 @@ on:
 jobs:
   brute:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # 1小时绝对够，防止意外挂起
 
     steps:
       - name: Checkout code
